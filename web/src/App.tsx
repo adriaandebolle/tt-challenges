@@ -1,6 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { fetchOrgs, postChat, slugToScope, type ChatResponse, type OrgScope } from "./api";
+import {
+  fetchOrgs,
+  fetchExecutives,
+  generateExecBrief,
+  postChat,
+  slugToScope,
+  type ChatResponse,
+  type GenerateResult,
+  type OrgScope,
+} from "./api";
+import { renderMarkdownLite } from "./markdown";
 
 interface Message {
   id: string;
@@ -19,6 +29,18 @@ export default function App() {
 
   const scope: OrgScope = slugToScope(orgSlug);
   const activeOrg = orgs?.find((o) => o.slug === orgSlug);
+
+  const { data: executives } = useQuery({
+    queryKey: ["executives", scope],
+    queryFn: () => fetchExecutives(scope),
+  });
+  const [executiveId, setExecutiveId] = useState<string>("");
+  const [brief, setBrief] = useState<GenerateResult | null>(null);
+
+  const generateMutation = useMutation({
+    mutationFn: () => generateExecBrief(scope, executiveId),
+    onSuccess: (result) => setBrief(result),
+  });
 
   const chatMutation = useMutation({
     mutationFn: (message: string) => postChat(scope, message),
@@ -69,6 +91,8 @@ export default function App() {
             onChange={(e) => {
               setOrgSlug(e.target.value);
               setMessages([]);
+              setExecutiveId("");
+              setBrief(null);
             }}
           >
             {(orgs ?? []).map((o) => (
@@ -84,6 +108,88 @@ export default function App() {
           </p>
         </div>
       </header>
+
+      <div className="generate-panel">
+        <select
+          className="org-switcher"
+          value={executiveId}
+          onChange={(e) => setExecutiveId(e.target.value)}
+        >
+          <option value="">Generate a brief for…</option>
+          {(executives ?? []).map((e) => (
+            <option key={e.id} value={e.id}>
+              {e.name}
+              {e.role ? ` — ${e.role}` : ""}
+              {activeOrg?.kind === "fund" ? ` (${e.org_name})` : ""}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={() => generateMutation.mutate()}
+          disabled={!executiveId || generateMutation.isPending}
+        >
+          {generateMutation.isPending ? "Generating…" : "Generate exec brief"}
+        </button>
+        {generateMutation.isError && (
+          <span className="error-banner">{(generateMutation.error as Error).message}</span>
+        )}
+      </div>
+
+      {brief && (
+        <div className="brief-card">
+          <div className="brief-header">
+            <div>
+              <span className="eyebrow">Generated · saved to the knowledge base</span>
+              <h2>{brief.title}</h2>
+            </div>
+            <button type="button" className="brief-close" onClick={() => setBrief(null)} aria-label="Close">
+              ×
+            </button>
+          </div>
+
+          <div className="trust-surface">
+            {brief.signalScore !== null && (
+              <span className="trust-chip">Signal: {brief.signalScore.toFixed(2)}</span>
+            )}
+            {brief.deviationFlag && <span className="trust-chip flag">⚑ {brief.deviationFlag}</span>}
+            <span className="trust-chip muted">Metadata block, next-steps checklist — Phase 2 (see WBS.md)</span>
+          </div>
+
+          <div className="brief-body" dangerouslySetInnerHTML={{ __html: renderMarkdownLite(brief.content) }} />
+
+          {(() => {
+            // Group by claim: the backend emits one row per (claim, cited
+            // index) pair, which is right for the data model but reads as
+            // near-duplicate noise if shown flat — group so each claim
+            // appears once with all the passages that back it.
+            const byClaim = new Map<string, typeof brief.citations>();
+            for (const c of brief.citations) {
+              const existing = byClaim.get(c.claimExcerpt) ?? [];
+              existing.push(c);
+              byClaim.set(c.claimExcerpt, existing);
+            }
+            return (
+              <div className="citations">
+                <span className="citations-label">Evidence ({byClaim.size} claims cited)</span>
+                {[...byClaim.entries()].map(([claim, cites], i) => (
+                  <div className="citation" key={i}>
+                    <p className="claim-text">{claim}</p>
+                    <div className="claim-sources">
+                      {cites.map((c) => (
+                        <span className="cite-tag" key={c.index}>
+                          [{c.index}] {c.sourcePath}
+                          {c.citationAnchor ? ` — ${c.citationAnchor}` : ""}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       <div className="thread" ref={threadRef}>
         {messages.length === 0 && (

@@ -186,6 +186,146 @@ body {
   color: var(--ink);
 }
 
+.claim-text {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.claim-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cite-tag {
+  font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  color: var(--accent);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+
+.generate-panel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-block: 14px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.generate-panel button {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.generate-panel button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.brief-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px 28px;
+  margin-block: 18px;
+}
+
+.brief-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.brief-header h2 {
+  font-family: Georgia, "Iowan Old Style", serif;
+  font-size: 20px;
+  margin: 2px 0 0;
+}
+
+.brief-close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink-muted);
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.trust-surface {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.trust-chip {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.trust-chip.flag {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.trust-chip.muted {
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--ink-muted);
+  font-weight: 500;
+  font-style: italic;
+}
+
+.brief-body {
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.brief-body h3 {
+  font-family: Georgia, "Iowan Old Style", serif;
+  font-size: 15.5px;
+  margin: 20px 0 8px;
+  color: var(--accent);
+}
+
+.brief-body h3:first-child {
+  margin-top: 0;
+}
+
+.brief-body p {
+  margin: 0 0 10px;
+}
+
+.brief-body ul {
+  margin: 0 0 10px;
+  padding-left: 20px;
+}
+
+.brief-body .cite-marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .composer {
   display: flex;
   gap: 10px;

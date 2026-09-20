@@ -53,6 +53,45 @@ export async function postChat(orgScope: OrgScope, message: string): Promise<Cha
   return res.json();
 }
 
+export interface Executive {
+  id: string;
+  name: string;
+  role: string | null;
+  org_slug: string;
+  org_name: string;
+}
+
+export async function fetchExecutives(orgScope: OrgScope): Promise<Executive[]> {
+  const res = await fetch(`${API_BASE}/executives?orgScope=${orgScope}`);
+  if (!res.ok) throw new Error("Failed to load executives");
+  return res.json();
+}
+
+export interface GenerateResult {
+  documentId: string;
+  generatedDocumentId: string;
+  title: string;
+  content: string;
+  signalScore: number | null;
+  deviationFlag: string | null;
+  executiveName: string;
+  executiveRole: string | null;
+  citations: { index: number; sourcePath: string; citationAnchor: string | null; docType: string | null; claimExcerpt: string }[];
+}
+
+export async function generateExecBrief(orgScope: OrgScope, executiveId: string): Promise<GenerateResult> {
+  const res = await fetch(`${API_BASE}/generate/exec-brief`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ orgScope, executiveId }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? "Generate request failed");
+  }
+  return res.json();
+}
+
 export interface DocumentRow {
   id: string;
   source_path: string;

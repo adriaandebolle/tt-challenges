@@ -137,3 +137,13 @@ Logged in DECISIONS.md and WBS.md against 1.0 Foundations, not silently fixed an
 **Asked (verbatim):** "Make sure you log my exact wording. That's a requirement from Team Theory. They want to understand what I ask/say/do, not how you summarised it (to look prettier/different)."
 **Got:** Recognized this was a standing requirement, not a one-off fix — every entry above (not just the two most recently mishandled ones) needed auditing for paraphrase-vs-verbatim. Cross-checked against `prompts/raw-session-*.jsonl` where possible (marked **[verified]** above) rather than trusting recall a second time, since recall is exactly what produced the 12:38 mix-up.
 **Did with it:** Rewrote this entire file. Entries the raw transcript captured cleanly are marked verified; a handful the transcript missed (an export gap, not an edit) are marked transcribed and typed from the live conversation record, with a note pointing back to the raw `.jsonl` as the tiebreaker if any small wording detail is still off.
+
+## 12:45 (b) tool: claude-code — [verified]
+**Asked (verbatim):** "or summarize the prompt" *(selected text from this file's own template line)* — "I do know the description says "or summarize", but do not exaggerate summarising."
+**Got:** A useful boundary: the template's "paste or summarize" license applies loosely to the "Got"/"Did with it" fields (the agent's own actions, fine to describe in its own words) but not to "Asked" — the candidate's half needs to stay close to their real wording, not a cleaned-up gloss of it.
+**Did with it:** Held that line for the rewrite already in progress; no entries needed a further pass.
+
+## 12:51 tool: claude-code
+**Asked:** "Ok, commit and continue." — approving the pending Generate-pillar backend and the PROMPTS.md/TIMESHEET.md correction together.
+**Got:** Both committed as separate, logically-scoped commits (`a2f759f` Generate backend, `fc171dd` trail correction). Continued to the Generate UI: executive picker, document-styled brief render, trust-surface chips.
+**Did with it:** Drove it in a real browser before calling it done, per the same discipline as Converse. The screenshot caught something the JSON response hadn't made obvious: the evidence panel listed one row per (claim, cited-index) pair, so a brief with several multi-source claims rendered as ~28 near-identical-looking rows — a trust surface that's technically complete data but illegible as evidence. Fixed by grouping citations by claim text in the UI; re-screenshotted and confirmed each claim now appears once with its sources grouped underneath.
