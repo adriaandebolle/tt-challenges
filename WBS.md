@@ -31,11 +31,11 @@ Where a phase touches a [CLAUDE.md](CLAUDE.md) decision checkpoint, it's marked 
 - [x] Executives are extracted from section headings shaped like "Name — Role" and upserted into the canonical `executives` registry (the identity-merge guard from the ERD). **Caught and fixed a real false-positive here:** a document's H1 title ("Leadership Competency Framework — Vantage Managed Services") matches the same "X — Y" shape as an executive heading, and the first pass ingested three document titles as if they were people. Fixed by only attempting the match on a real `## ` section heading, never the title-fallback chunk — re-verified after a full `make reset && make ingest`: 20 clean executives across the three portcos, no document titles, no `· avg 4.2` noise in role strings.
 - [x] Re-verified RLS against the real ingested data, not just synthetic test rows: pc1-scoped sees its 8 executives only, pc2-scoped sees its 5 only (no overlap), fund-scoped correctly aggregates all 20.
 
-### 1.2 Converse — Must
+### 1.2 Converse — Must *(backend done, verified; UI next)*
 - [x] checkpoint: **grounding strategy** — decided: vector RAG for Converse's open-ended questions; exec-scoped structured retrieval for Generate (see [DECISIONS.md](DECISIONS.md)). No citation, no claim, in either path.
-- [ ] Chunk metadata carries `org_id`, `doc_type`, and (where applicable) `executive_name` — needed for both retrieval paths below.
-- [ ] Retrieval: embed query, vector search, org/portco filter (RLS-scoped).
-- [ ] Chat endpoint: grounded answer with citations that trace to a real passage; explicit "not in the corpus" path — never invents.
+- [x] Chunk metadata carries `org_id`, `doc_type`, and `executive_id` — done in ingest (WBS 1.1).
+- [x] Retrieval (`api/src/retrieval.ts`): `vectorSearch` (pgvector cosine distance, RLS-scoped via the caller's org context) for Converse; `chunksForExecutive` (no ranking, full coverage) ready for Generate.
+- [x] Chat endpoint (`POST /api/chat`, `api/src/chat.ts` + `api/src/index.ts`): embeds the question locally, retrieves top-8 chunks under RLS, asks Claude (`claude-sonnet-5`) to answer *only* from the numbered passages with `[n]` citation markers, parses which passages were actually cited, returns them as structured citations. Verified against the real corpus: a grounded question (Anika Sørensen's flight risk) returned an 8-citation answer tracing to real passages (leadership-assessment, 360s, interview notes, VCP, board deck); an out-of-corpus question (stock ticker) got an honest refusal with zero citations; asking about a PC1 executive while scoped to PC2 also refused — RLS extends into chat, not just direct table reads.
 - [ ] Chat UI, single-turn.
 
 ### 1.3 Generate — Must *(the heart)*
@@ -78,6 +78,9 @@ Only after Phases 1–3 are genuinely solid. Candidates, to be argued for (not d
 - Data model rethought from first principles rather than the obvious tables.
 - One extra capability argued from the business case (e.g., surfacing the identity-merge / source-reliability provenance risks `05-talent-review.md` names explicitly).
 - ICP/market research beyond this repo that visibly changed a call.
+
+## Open questions for the team *(not a build task — a product/vendor decision)*
+- **Model-provider sovereignty:** the AI layer is Anthropic-only right now (STACK.md's stated single permitted external dependency). Worth checking with Zach/the team whether a European provider (e.g. Mistral AI) is a hard requirement for some clients or regions — regulated EU funds may carry data-residency or sovereignty constraints an Anthropic-only architecture doesn't satisfy. `01-icp.md` notes these buyers "stall on security/compliance review... far more often than on price," so this is worth raising as a real question rather than assumed away. Not something to build against speculatively — a question to bring back before committing to a multi-provider architecture.
 
 ---
 
