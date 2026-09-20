@@ -11,7 +11,7 @@ export interface GenerateResult {
   deviationFlag: string | null;
   executiveName: string;
   executiveRole: string | null;
-  citations: { index: number; sourcePath: string; citationAnchor: string | null; docType: string | null; claimExcerpt: string }[];
+  citations: { index: number; sourceDocumentId: string; sourcePath: string; citationAnchor: string | null; docType: string | null; claimExcerpt: string }[];
 }
 
 // Extraction, not new computation (DECISIONS.md's trust-surface checkpoint):
@@ -120,6 +120,7 @@ export async function generateExecBrief(executiveId: string, orgIds: string[]): 
       );
       citations.push({
         index: row.chunkIndex,
+        sourceDocumentId: chunk.documentId,
         sourcePath: chunk.sourcePath,
         citationAnchor: chunk.citationAnchor,
         docType: chunk.docType,

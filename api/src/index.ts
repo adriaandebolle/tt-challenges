@@ -3,7 +3,9 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { answerQuestion } from "./chat.js";
 import { generateExecBrief } from "./generate.js";
+import { getDashboard } from "./dashboard.js";
 import { pool, resolveOrgIds, withOrgContext, type OrgScope } from "./db.js";
+import { getObjectText } from "./storage.js";
 
 const app = new Hono();
 app.use("*", cors());
@@ -36,6 +38,41 @@ app.get("/api/documents", async (c) => {
       return rows;
     });
     return c.json(rows);
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+// Makes a citation an actual openable source, not inert text — SPEC.md's
+// "a reader can open the source and find the line." Ingested docs are read
+// from MinIO (the real stored file); generated docs are already in Postgres.
+app.get("/api/documents/:id/content", async (c) => {
+  const scope = c.req.query("orgScope") as OrgScope | undefined;
+  const id = c.req.param("id");
+  if (!scope) return c.json({ error: "orgScope is required" }, 400);
+
+  try {
+    const orgIds = await resolveOrgIds(scope);
+    const doc = await withOrgContext(orgIds, async (client) => {
+      const { rows } = await client.query(
+        `SELECT d.source_path, d.doc_type, d.storage_key, d.origin, gd.title AS generated_title, gd.content AS generated_content
+         FROM documents d
+         LEFT JOIN generated_documents gd ON gd.id = d.generated_document_id
+         WHERE d.id = $1`,
+        [id],
+      );
+      return rows[0];
+    });
+    if (!doc) return c.json({ error: "Document not found (or not visible in this scope)" }, 404);
+
+    const content =
+      doc.origin === "generated" ? doc.generated_content : await getObjectText(doc.storage_key);
+
+    return c.json({
+      sourcePath: doc.origin === "generated" ? doc.generated_title : doc.source_path,
+      docType: doc.doc_type,
+      content,
+    });
   } catch (err) {
     return c.json({ error: (err as Error).message }, 400);
   }
@@ -75,6 +112,19 @@ app.post("/api/generate/exec-brief", async (c) => {
   } catch (err) {
     console.error(err);
     return c.json({ error: (err as Error).message }, 500);
+  }
+});
+
+app.get("/api/dashboard", async (c) => {
+  const scope = c.req.query("orgScope") as OrgScope | undefined;
+  if (!scope) return c.json({ error: "orgScope is required" }, 400);
+
+  try {
+    const orgIds = await resolveOrgIds(scope);
+    const data = await getDashboard(orgIds);
+    return c.json(data);
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
   }
 });
 

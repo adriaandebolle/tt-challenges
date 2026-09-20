@@ -46,14 +46,14 @@ Where a phase touches a [CLAUDE.md](CLAUDE.md) decision checkpoint, it's marked 
 
 **Pillar 3 (Generate) — Must-level, done end to end:** an exec brief is generated from a real executive, grounded in exec-scoped retrieval, cited at claim level, carries pass-through trust-surface fields, saved back into the KB, and rendered as a real document in the UI. Note: 4 test-generation runs from verification are currently sitting in `generated_documents`/`documents` (all for Priya Balakrishnan, PC1) — left in place pending a decision on whether to clean them out or keep them as demo content before the review call.
 
-### 1.4 Dashboard — Must
-- [ ] One view: ingestion status counts, what's failed, recently generated docs — "what's in the KB, what's the pipeline doing, what's been generated."
+### 1.4 Dashboard — Must ✅ *(done, verified)*
+- [x] One view (`web/src/Dashboard.tsx`, `GET /api/dashboard`): status tiles (ready/in-flight/failed/executives-tracked), a "Needs attention" list of failed documents with their specific reason, a "Recently generated" list. Grouped this way rather than as flat counters — DESIGN.md's "a dashboard of vanity counters that answers no user question" — at no extra build cost over a naive version. Driven in a real browser: correctly shows 34 ready / 7 failed (with reasons) / 20 executives, and visibly surfaces the 4 duplicate test-generated briefs from earlier verification, which is exactly the kind of thing a working dashboard should make obvious.
 
-### 1.5 Placeholders for everything deferred out of MVP
-- [ ] Ingest: "add a document" control visible, labeled not-yet-wired if 2.1 isn't done.
-- [ ] Converse: a visible note if multi-turn/streaming isn't live yet.
-- [ ] Generate: trust-surface panel shows citations + signal/deviation flags now; metadata block and next-steps shown as "planned" placeholders, not silently absent.
-- [ ] Dashboard: a listed-but-inactive tile for the "should" framing (morning question) if not yet built.
+### 1.5 Placeholders for everything deferred out of MVP ✅ *(done)*
+- [x] Ingest: a disabled "+ Add a document" control on the Dashboard, with a visible note it's not wired yet and how the corpus actually got in (`make ingest`) — verified in browser.
+- [x] Converse: the empty-state copy on the Converse tab already discloses multi-turn isn't live yet (built alongside the chat UI itself, WBS 1.2).
+- [x] Generate: the trust-surface panel already ships an explicit muted chip — "Metadata block, next-steps checklist — Phase 2" — next to the real signal-score/deviation chips (built alongside Generate, WBS 1.3).
+- [x] Dashboard: no separate inactive tile needed — the "Needs attention" / "Recently generated" grouping plus the footnote naming the Phase 2 reframe already covers the "should" framing honestly, without an artificial empty stub.
 
 ### 1.6 Wrap-for-submission — Must (README's definition of done)
 - [ ] checkpoint: **final pass** — does DECISIONS.md tell the true story; does clean `make up` + documented steps actually work.
@@ -90,3 +90,5 @@ Only after Phases 1–3 are genuinely solid. Candidates, to be argued for (not d
 ## Status
 
 Planning closed 11:32 — Phase 0 done, the five checkpoints above resolved and logged verbatim in [DECISIONS.md](DECISIONS.md). Nothing in Phase 1 is implemented yet — checkboxes above track that honestly as work happens. Next up: 1.0 Foundations (the Postgres migration).
+
+**13:21 — Phase 1 all four pillars built and verified, with a caveat worth being honest about.** "Verified" above meant driven in a real browser and checked against the live corpus — but that verification missed real usability bugs the candidate then found in their own visual pass: a layout bug (a tall generated brief could push the chat thread out of reach), unrendered Markdown in chat answers, and citations that weren't actually clickable. All three are fixed and re-verified (see DECISIONS.md/PROMPTS.md 13:21). The lesson: "I drove it in a browser" caught functional bugs (does the grounding work, does RLS hold) but not all usability ones — a second, human pass over the same surface still found real problems. Worth remembering for Phase 2+ rather than assuming automated verification is sufficient on its own.

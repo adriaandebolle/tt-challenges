@@ -5,6 +5,7 @@ import { withOrgContext } from "./db.js";
 
 export interface Citation {
   index: number;
+  documentId: string;
   sourcePath: string;
   citationAnchor: string | null;
   docType: string | null;
@@ -68,6 +69,7 @@ export async function answerQuestion(orgIds: string[], question: string): Promis
   const citations: Citation[] = chunks
     .map((c, i) => ({
       index: i + 1,
+      documentId: c.documentId,
       sourcePath: c.sourcePath,
       citationAnchor: c.citationAnchor,
       docType: c.docType,

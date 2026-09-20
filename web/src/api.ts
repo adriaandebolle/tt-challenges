@@ -28,6 +28,7 @@ export async function fetchOrgs(): Promise<Org[]> {
 
 export interface Citation {
   index: number;
+  documentId: string;
   sourcePath: string;
   citationAnchor: string | null;
   docType: string | null;
@@ -76,7 +77,7 @@ export interface GenerateResult {
   deviationFlag: string | null;
   executiveName: string;
   executiveRole: string | null;
-  citations: { index: number; sourcePath: string; citationAnchor: string | null; docType: string | null; claimExcerpt: string }[];
+  citations: { index: number; sourceDocumentId: string; sourcePath: string; citationAnchor: string | null; docType: string | null; claimExcerpt: string }[];
 }
 
 export async function generateExecBrief(orgScope: OrgScope, executiveId: string): Promise<GenerateResult> {
@@ -88,6 +89,35 @@ export async function generateExecBrief(orgScope: OrgScope, executiveId: string)
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error ?? "Generate request failed");
+  }
+  return res.json();
+}
+
+export interface DashboardData {
+  statusCounts: Record<string, number>;
+  failedDocuments: { id: string; sourcePath: string; statusReason: string | null; docType: string | null }[];
+  recentGenerated: { id: string; title: string; executiveName: string | null; createdAt: string }[];
+  totalChunks: number;
+  totalExecutives: number;
+}
+
+export async function fetchDashboard(orgScope: OrgScope): Promise<DashboardData> {
+  const res = await fetch(`${API_BASE}/dashboard?orgScope=${orgScope}`);
+  if (!res.ok) throw new Error("Failed to load dashboard");
+  return res.json();
+}
+
+export interface DocumentContent {
+  sourcePath: string;
+  docType: string | null;
+  content: string;
+}
+
+export async function fetchDocumentContent(orgScope: OrgScope, documentId: string): Promise<DocumentContent> {
+  const res = await fetch(`${API_BASE}/documents/${documentId}/content?orgScope=${orgScope}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? "Failed to load document");
   }
   return res.json();
 }

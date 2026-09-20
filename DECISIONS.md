@@ -9,9 +9,23 @@ Keep this as you go, not from memory at the end. Alongside your code and [PROMPT
 Exact steps from a clean clone. We follow these literally.
 
 ```
-make up
-# then …
+cp .env.example .env     # paste your ANTHROPIC_API_KEY
+make up                  # starts Postgres/MinIO/ElasticMQ, installs api/+web/ deps,
+                          # applies the schema+RLS migration, bootstraps the bucket+queue
+make ingest               # seeds data/ through the real pipeline and drains it once
+                          # (30 markdown docs → ready, 7 office-format docs → failed,
+                          # visibly, with a reason — that's expected, not a bug)
+
+cd api && npm run start   # API on http://localhost:8787
+cd web && npm run dev     # UI on http://localhost:5173 (open this)
 ```
+
+Notes on what `make up` does differently from a bare `docker compose up`, since a stranger's machine hitting either of these would otherwise look broken:
+- `docker-compose.yml`'s MinIO image points at `quay.io/minio/minio`, not `docker.io/minio/minio` — the latter now requires Docker Hub auth (a real distribution change hit during this build).
+- Postgres is mapped to **host port 5433**, not 5432 — dodges a collision with any Postgres already running locally. `DATABASE_URL`/`APP_DATABASE_URL` in `.env.example` already point at 5433; `docker compose exec db psql` (and `make psql`) are unaffected either way since that's container-internal.
+- The API connects to Postgres as `app_user` (least-privilege, created by the first migration), never as `brain` (the compose bootstrap role) — `brain` is a Postgres superuser and superusers bypass Row-Level Security unconditionally. See the Foundations decision below.
+
+To try the app: open the UI, pick a portco (e.g. Vantage Managed Services) from the top-right switcher, ask something like *"What is the CTO's flight risk?"* on the Converse tab, then pick an executive from the dropdown and click **Generate exec brief**. Check the Dashboard tab for pipeline/KB state.
 
 ## The use case I chose
 
@@ -65,8 +79,17 @@ Diagram for discussion: [Second Brain Schema (ERD)](https://claude.ai/artifact/5
 
 ## What I cut
 
-The parts of [SPEC.md](SPEC.md) you deliberately didn't build, and why those were the right cuts for a 2–3 hour slice. Cuts recorded here are graded as product decisions; things silently missing are graded as gaps.
+Full detail lives in [WBS.md](WBS.md) Phases 2–4; this is the summary. Everything below was a deliberate Should/Could/beyond-spec deferral, decided against the timebox in the scope-cuts checkpoint (WBS Phase 0) — not something that silently didn't get built.
+
+- **Ingest:** office-format converters (`.docx`/`.pptx`/`.xlsx`) — those 7 files fail visibly with a specific reason instead of being parsed. Upload-through-the-product is stubbed (disabled control, visible on the Dashboard) rather than built. Re-processing/dead-letter handling not attempted.
+- **Converse:** multi-turn context — each question is answered independently; the empty-state copy says so. Streaming, reranking, and retrieval-quality work beyond top-8 cosine similarity are untouched.
+- **Generate:** the trust surface ships citations plus the signal-score/deviation-flag pass-through (pulled forward into Must, see the trust-surface decision below) but not the metadata block (who/what/when) or suggested-next-steps checklist — both shown as an honest placeholder chip on the brief. The saved brief isn't re-ingested/re-citable in later chat (the "full loop" Could).
+- **Dashboard:** it's the Must-level "state of the world" view; a sharper "what's new since I last looked" framing (true diffing, not just a list) is deferred.
+- **Isolation:** RLS is real and verified for the `app_user` role specifically (see the Foundations decision), but a second non-superuser role hasn't been tested against it, the probe is manual rather than an automated regression test, and there's no real authentication — the org-scope selector in the UI is an explicit stand-in, not a login system.
+- **Beyond the spec:** none of Phase 4's taste items (a fuller design system, ICP research, an extra business-argued capability) were attempted — the timebox went to a genuinely complete Must-level slice across all four pillars instead of polish on top of a partial one.
 
 ## If I had another day
 
-Two or three sentences: what you'd build next, harden, or test — and the first thing you'd ship.
+*(Draft below — this is the candidate's call to finalize, not the agent's; the options are real gaps surfaced by the build, the priority among them is yours.)*
+
+The two build-time bugs that got caught by manual verification — RLS silently inert under a superuser role, and the executive-extraction heuristic ingesting document titles as people — are the strongest argument for what to harden first: an automated test suite (the RLS cross-tenant probe and the executive-extraction guard both deserve to be regression tests, not something a human has to remember to re-check by hand after a schema or ingest change). Real authentication (replacing the org-scope selector) would be the next-highest-leverage item given how much of the product's trust story rests on isolation actually holding. After that: office-format converters (the corpus is 19% unreadable right now), multi-turn conversation (Generate is explicitly meant to flow *from* a conversation, and today it's a separate action), and the full re-ingestion loop so a saved brief becomes citable evidence in later chat — which is where the "memory compounds" part of the mission actually starts to show up.

@@ -11,6 +11,8 @@ import {
   type OrgScope,
 } from "./api";
 import { renderMarkdownLite } from "./markdown";
+import Dashboard from "./Dashboard";
+import DocumentViewer from "./DocumentViewer";
 
 interface Message {
   id: string;
@@ -22,6 +24,7 @@ interface Message {
 
 export default function App() {
   const { data: orgs } = useQuery({ queryKey: ["orgs"], queryFn: fetchOrgs });
+  const [tab, setTab] = useState<"converse" | "dashboard">("converse");
   const [orgSlug, setOrgSlug] = useState<string>("daw-fund");
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -36,6 +39,7 @@ export default function App() {
   });
   const [executiveId, setExecutiveId] = useState<string>("");
   const [brief, setBrief] = useState<GenerateResult | null>(null);
+  const [viewerDoc, setViewerDoc] = useState<{ documentId: string; anchor: string | null } | null>(null);
 
   const generateMutation = useMutation({
     mutationFn: () => generateExecBrief(scope, executiveId),
@@ -82,7 +86,22 @@ export default function App() {
       <header className="app-header">
         <div>
           <span className="eyebrow">The Second Brain</span>
-          <h1>Converse</h1>
+          <div className="tabs">
+            <button
+              type="button"
+              className={tab === "converse" ? "tab-active" : ""}
+              onClick={() => setTab("converse")}
+            >
+              Converse
+            </button>
+            <button
+              type="button"
+              className={tab === "dashboard" ? "tab-active" : ""}
+              onClick={() => setTab("dashboard")}
+            >
+              Dashboard
+            </button>
+          </div>
         </div>
         <div>
           <select
@@ -109,6 +128,10 @@ export default function App() {
         </div>
       </header>
 
+      {tab === "dashboard" ? (
+        <Dashboard scope={scope} orgName={activeOrg?.name ?? "…"} />
+      ) : (
+        <>
       <div className="generate-panel">
         <select
           className="org-switcher"
@@ -136,6 +159,7 @@ export default function App() {
         )}
       </div>
 
+      <div className="scroll-area" ref={threadRef}>
       {brief && (
         <div className="brief-card">
           <div className="brief-header">
@@ -177,10 +201,17 @@ export default function App() {
                     <p className="claim-text">{claim}</p>
                     <div className="claim-sources">
                       {cites.map((c) => (
-                        <span className="cite-tag" key={c.index}>
+                        <button
+                          type="button"
+                          className="cite-tag"
+                          key={c.index}
+                          onClick={() =>
+                            setViewerDoc({ documentId: c.sourceDocumentId, anchor: c.citationAnchor })
+                          }
+                        >
                           [{c.index}] {c.sourcePath}
                           {c.citationAnchor ? ` — ${c.citationAnchor}` : ""}
-                        </span>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -191,7 +222,7 @@ export default function App() {
         </div>
       )}
 
-      <div className="thread" ref={threadRef}>
+      <div className="thread">
         {messages.length === 0 && (
           <p className="empty-state">
             Ask a question grounded in {activeOrg?.name ?? "the knowledge base"}'s ingested documents —
@@ -212,15 +243,21 @@ export default function App() {
           ) : (
             <div key={m.id} className={`msg-assistant${m.grounded === false ? " ungrounded" : ""}`}>
               {m.grounded === false && <span className="not-found-tag">Not in the knowledge base</span>}
-              <div className="answer">{m.text}</div>
+              <div className="answer brief-body" dangerouslySetInnerHTML={{ __html: renderMarkdownLite(m.text) }} />
               {m.citations && m.citations.length > 0 && (
                 <div className="citations">
                   <span className="citations-label">Evidence</span>
                   {m.citations.map((c) => (
                     <div className="citation" key={c.index}>
                       <span className="cite-index">[{c.index}]</span>
-                      <span className="cite-source">{c.sourcePath}</span>
-                      {c.citationAnchor ? ` — ${c.citationAnchor}` : ""}
+                      <button
+                        type="button"
+                        className="cite-link"
+                        onClick={() => setViewerDoc({ documentId: c.documentId, anchor: c.citationAnchor })}
+                      >
+                        {c.sourcePath}
+                        {c.citationAnchor ? ` — ${c.citationAnchor}` : ""}
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -230,6 +267,7 @@ export default function App() {
         )}
 
         {chatMutation.isPending && <div className="msg-assistant">Thinking…</div>}
+      </div>
       </div>
 
       <form className="composer" onSubmit={handleSubmit}>
@@ -243,6 +281,17 @@ export default function App() {
           Ask
         </button>
       </form>
+        </>
+      )}
+
+      {viewerDoc && (
+        <DocumentViewer
+          scope={scope}
+          documentId={viewerDoc.documentId}
+          highlightAnchor={viewerDoc.anchor}
+          onClose={() => setViewerDoc(null)}
+        />
+      )}
     </div>
   );
 }
