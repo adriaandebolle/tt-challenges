@@ -3,19 +3,32 @@
 COMPOSE ?= docker compose
 SVC ?=
 
-.PHONY: help up down reset ps logs psql
+.PHONY: help up down reset ps logs psql migrate bootstrap ingest
 
 help: ## List available commands
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[1m%-8s\033[0m %s\n", $$1, $$2}'
 
-up: ## Start the backing services (Postgres+pgvector :5432, MinIO :9000/:9001, ElasticMQ :9324)
-	$(COMPOSE) up -d --build
+up: ## Start backing services, install api/ deps, apply migrations, bootstrap MinIO+ElasticMQ
+	$(COMPOSE) up -d --wait
+	cd api && npm install --no-fund --no-audit
+	$(MAKE) migrate
+	$(MAKE) bootstrap
 	@echo ""
-	@echo "  postgres  → localhost:5432  (brain / brain, db: secondbrain)"
-	@echo "  minio     → localhost:9000  (console :9001 — minio-root / minio-secret)"
-	@echo "  queue     → localhost:9324  (SQS-compatible)"
+	@echo "  postgres  → localhost:5433  (brain / brain, db: secondbrain) — schema applied; remapped from 5432, see docker-compose.yml"
+	@echo "  minio     → localhost:9000  (console :9001 — minio-root / minio-secret) — bucket ready"
+	@echo "  queue     → localhost:9324  (SQS-compatible) — queue ready"
 	@echo ""
-	@echo "  All empty. Schema, buckets, queues — and the product — are yours. See SPEC.md."
+	@echo "  Next: make ingest    (seed the data/ corpus into the pipeline)"
+	@echo "        cd api && npm run dev    (start the API)"
+
+migrate: ## Apply Postgres migrations from api/migrations (idempotent)
+	cd api && npm run db:migrate
+
+bootstrap: ## Create the MinIO bucket + ElasticMQ queue (idempotent)
+	cd api && npm run bootstrap:infra
+
+ingest: ## Seed the data/ corpus through the real pipeline (queue → worker)
+	cd api && npm run ingest:seed
 
 down: ## Stop everything (keeps data volumes)
 	$(COMPOSE) down
