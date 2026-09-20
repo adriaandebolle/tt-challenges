@@ -62,3 +62,37 @@ export async function withOrgContext<T>(
     client.release();
   }
 }
+
+/** Every org id that exists. For the worker/seed script only — those are
+ * trusted system processes that legitimately touch every tenant's rows
+ * (whichever org a given document actually belongs to), not a stand-in for a
+ * request from a specific fund or portco user. Deliberately still goes
+ * through the same app.current_org_ids mechanism as every other query rather
+ * than a role-specific bypass policy — one isolation mechanism, not two. */
+export async function resolveAllOrgIds(): Promise<string[]> {
+  const { rows } = await pool.query<{ id: string }>(`SELECT id FROM orgs`);
+  return rows.map((r) => r.id);
+}
+
+export async function getOrgBySlug(slug: string): Promise<{ id: string; kind: string } | null> {
+  const { rows } = await pool.query<{ id: string; kind: string }>(
+    `SELECT id, kind FROM orgs WHERE slug = $1`,
+    [slug],
+  );
+  return rows[0] ?? null;
+}
+
+export async function upsertExecutive(
+  client: pg.PoolClient,
+  orgId: string,
+  name: string,
+  role: string,
+): Promise<string> {
+  const { rows } = await client.query<{ id: string }>(
+    `INSERT INTO executives (org_id, name, role) VALUES ($1, $2, $3)
+     ON CONFLICT (org_id, name) DO UPDATE SET role = EXCLUDED.role
+     RETURNING id`,
+    [orgId, name, role],
+  );
+  return rows[0].id;
+}

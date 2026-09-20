@@ -3,7 +3,7 @@
 COMPOSE ?= docker compose
 SVC ?=
 
-.PHONY: help up down reset ps logs psql migrate bootstrap ingest
+.PHONY: help up down reset ps logs psql migrate bootstrap ingest worker
 
 help: ## List available commands
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[1m%-8s\033[0m %s\n", $$1, $$2}'
@@ -27,8 +27,12 @@ migrate: ## Apply Postgres migrations from api/migrations (idempotent)
 bootstrap: ## Create the MinIO bucket + ElasticMQ queue (idempotent)
 	cd api && npm run bootstrap:infra
 
-ingest: ## Seed the data/ corpus through the real pipeline (queue → worker)
+ingest: ## Seed the data/ corpus through the real pipeline, then drain it once (queue → worker)
 	cd api && npm run ingest:seed
+	cd api && npm run worker:once
+
+worker: ## Run the ingest worker continuously (real async mode — leave running in its own terminal)
+	cd api && npm run worker
 
 down: ## Stop everything (keeps data volumes)
 	$(COMPOSE) down
