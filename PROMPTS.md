@@ -61,4 +61,27 @@ What we're reading for:
 ## ~11:32 tool: claude-code
 **Asked:** Flagged that PROMPTS.md hadn't been kept current even though the raw transcript was landing in `prompts/` via the auto-export hook, and asked for regular commits going forward for transparency.
 **Got:** This backfilled index (the entries above), reconstructed from the raw session transcript and this conversation rather than written live — noted here honestly rather than presented as if it had been kept turn-by-turn. Going forward the plan is to keep this updated as decisions happen, not in a batch like this one.
-**Did with it:** In progress — first commit being made now to establish a real cadence instead of one large commit at the end.
+**Did with it:** Committed the planning artifacts (`8a22080`).
+
+## ~11:35 tool: claude-code
+**Asked:** "Great, that's more transparent and readable... This should be logged into our TIMESHEET, marked as done in the WBS. Then, after a step, I verify the changed files, and we commit... I have control over each step/commit." Established the review-before-commit workflow.
+**Got:** WBS Phase 0 and the five resolved checkpoints marked `[x]`; every unbuilt implementation task left `[ ]` rather than marked done prematurely. Full diff shown before committing (`e1ae631`).
+**Did with it:** Reviewed the diff, approved, committed.
+
+## ~11:40–12:05 tool: claude-code
+**Asked:** "commit and let's continue with the data migrations and further setup" — moved to WBS 1.0 Foundations.
+**Got:** Scaffolded `api/` (Node+TS, Hono/pg/AWS-SDK/Xenova deps), wrote the Postgres migration (orgs/documents/chunks/generated_documents/executives/citations, RLS policies, `app_current_org_ids()`), a migration runner, and a MinIO+ElasticMQ bootstrap script; wired both into `make up`.
+**Did with it:** Two real bugs surfaced and were fixed before moving on, not glossed over:
+1. `docker.io/minio/minio` now requires Docker Hub auth (a real distribution change) — pull failed on first `make up`. Switched to `quay.io/minio/minio`, verified the pull succeeds.
+2. `make up` ran clean, but a manual cross-tenant RLS probe (insert as one portco, try to read/write as another) showed isolation **did nothing** — `brain` (the compose bootstrap role) is a Postgres superuser, and superusers bypass RLS unconditionally, `FORCE ROW LEVEL SECURITY` notwithstanding. This would have been an invisible, catastrophic bug — every RLS policy present and "correct," isolation completely absent — exactly the failure mode `05-talent-review.md` warns about (everything shows green, the output is wrong). Fixed by adding a least-privilege `app_user` role for all runtime queries, keeping `brain` for migrations only; re-ran the cross-tenant probe against `app_user` and confirmed isolation actually holds (no-context = 0 rows, pc2 can't see pc1's row, a cross-tenant insert is rejected by Postgres itself). Also hit a local port 5432 collision with a native Postgres on this machine — remapped the container to 5433 rather than touch the user's unrelated service.
+Logged in DECISIONS.md as an implementation note and in WBS.md against 1.0 Foundations, not silently fixed and forgotten.
+
+## ~12:10 tool: claude-code
+**Asked:** "Can you create an artifact with the ERD? This makes it easier to discuss database structure." Confirmed the Docker Hub/minio fix independently ("I had the same issue... although I was logged in correctly").
+**Got:** A published Claude.ai artifact diagramming the six-table schema — orgs outside an RLS boundary, org_id threading every table inside it, the executives-by-id identity-merge guard, and the generated_documents→documents loopback — plus an in-page callout about the superuser/RLS bug.
+**Did with it:** Took it as-is.
+
+## ~12:15 tool: claude-code
+**Asked:** "make sure that we mark the security issues and RLS in our WBS as a follow-up task. We need to test/investigate with another normal non-super user later. Put the link in a document... add an additional section to the README... links to our (new) resources like TIMESHEET and WBS."
+**Got:** A follow-up added to WBS.md 1.0 (test isolation against a second non-superuser role, automate the probe as a regression test, separately verify `citations`' subquery-based policy — not just re-asserting what's already proven for `app_user`); the ERD link recorded in DECISIONS.md and WBS.md; a new "Planning & build trail" section added to README.md linking WBS/TIMESHEET/DECISIONS/PROMPTS/the ERD, explicitly marked as candidate-added rather than part of the original brief, with a note that the artifact link is private by default.
+**Did with it:** In progress — diff to be reviewed before commit, per the established workflow.

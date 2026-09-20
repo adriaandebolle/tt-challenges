@@ -51,6 +51,10 @@ make up
 - **In your own words (typed by you, not your agent):**
 ```
 
+**Implementation note (not a checkpoint, worth recording anyway):** the first cut of this schema had RLS policies that looked correct and did nothing — `brain` (the docker-compose bootstrap role) is a Postgres superuser, and superusers bypass Row-Level Security unconditionally, `FORCE ROW LEVEL SECURITY` notwithstanding. Caught by deliberately testing cross-tenant access (inserted a doc as pc1, tried to read/write it as pc2) rather than trusting that the SQL matched the design. Fixed with a dedicated non-superuser `app_user` role — see `api/migrations/0001_init.sql` and `api/src/db.ts`. Also hit a local port collision (this machine already runs a native Postgres on 5432) and remapped the container to host port 5433 in `docker-compose.yml` — an environment fix, not a design decision.
+
+Diagram for discussion: [Second Brain Schema (ERD)](https://claude.ai/artifact/5ZCm8PUfhYjB6C2eHwPMb9) — private link, share it from the page if reviewers need it before the call. Flagged a real follow-up in WBS.md 1.0: the cross-tenant probe only proves isolation for `app_user` specifically — testing it against a second non-superuser role, automating it as a regression test, and separately checking `citations`' subquery-based policy are still open.
+
 ```
 ### Decision: Ingest scope for MVP — markdown only, everything else fails visibly
 - **The call:** For Phase 1 (MVP), only `.md` files are actually parsed, chunked, and embedded. Every file in `data/` — including the `.docx`/`.pptx`/`.xlsx` originals — is still enqueued through the real pipeline (the queue exists immediately, nothing is pre-filtered out of it), but non-markdown files fail *that document* immediately with an explicit, specific reason: "file extension not yet supported." Converters for office formats are deferred to Phase 2/3 of the WBS.

@@ -82,4 +82,16 @@ You're done when your slice runs end to end, or the timebox is up — whichever 
 
 ---
 
+## Planning & build trail *(added by the candidate during the build — not part of the original brief)*
+
+Alongside the required `DECISIONS.md`/`PROMPTS.md`:
+
+- [WBS.md](WBS.md) — work breakdown structure, organized by build maturity (an MVP at Must-level across all four pillars first, then Should/Could layered on), with each [CLAUDE.md](CLAUDE.md) decision checkpoint pinned to the task that triggers it.
+- [TIMESHEET.md](TIMESHEET.md) — wall-clock log of the build, including non-technical time.
+- [DECISIONS.md](DECISIONS.md) — the required decision log (verbatim checkpoint answers).
+- [PROMPTS.md](PROMPTS.md) — the required AI-trail index.
+- [Database schema (ERD)](https://claude.ai/artifact/5ZCm8PUfhYjB6C2eHwPMb9) — a diagram of the Postgres schema in `api/migrations/0001_init.sql`, including the RLS isolation boundary and the superuser bug it guards against.
+
+---
+
 *Everything here — the fund, the companies, the people, the documents — is fictional. No real client data. Have fun with it; we're looking forward to seeing what you build.*

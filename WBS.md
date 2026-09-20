@@ -15,11 +15,13 @@ Where a phase touches a [CLAUDE.md](CLAUDE.md) decision checkpoint, it's marked 
 
 ## Phase 1 — MVP: thin slice, Must-level, all four pillars, end to end
 
-### 1.0 Foundations
+### 1.0 Foundations ✅ *(done, verified)*
 - [x] checkpoint: **data model** — decided: `orgs` (fund + PC1/PC2/PC3) with every content row FK'd via `org_id`, isolation enforced with **Postgres RLS from the first migration** (not deferred) — see [DECISIONS.md](DECISIONS.md). This pulls SPEC's "org-scoped access enforcement" out of Phase 3/Could and into Phase 1/Must-plus.
-- [ ] Postgres migration: `orgs`, `documents`, `chunks` (pgvector), `generated_documents`, `executives` — every content row FK'd to `org_id`; RLS policies scoping every table by the current org context.
-- [ ] App layer sets/authenticates the org context per request (RLS needs this, not just a `WHERE` clause) — budget real time for this, it's not free.
-- [ ] MinIO bucket + ElasticMQ queue bootstrap, created on `make up` (code/init-script, not manual).
+- [x] Postgres migration (`api/migrations/0001_init.sql`): `orgs`, `documents`, `chunks` (pgvector), `generated_documents`, `executives`, `citations` — every content row FK'd to `org_id`; RLS policies scoping every table by the current org context.
+- [x] App layer sets/authenticates the org context per request (`api/src/db.ts` — `withOrgContext`, `resolveOrgIds`). **Caught a real bug doing this:** the `brain` role is a Postgres superuser (default for the official image's bootstrap user), and superusers bypass RLS unconditionally regardless of `FORCE ROW LEVEL SECURITY` — my first version of this table looked correct and was completely inert. Fixed by adding a dedicated non-superuser `app_user` role that the app connects as; `brain` is now migrations-only. Verified with a real cross-tenant probe (see DECISIONS.md) before trusting it.
+- [x] MinIO bucket + ElasticMQ queue bootstrap, created on `make up` (`api/scripts/bootstrap-infra.ts`, idempotent).
+- [x] ERD published for discussion: [Second Brain Schema](https://claude.ai/artifact/5ZCm8PUfhYjB6C2eHwPMb9) (private link — see README's "Planning & build trail" section).
+- [ ] **Follow-up (security, tracked not done):** the cross-tenant probe so far only proves isolation holds for `app_user` specifically. Before trusting this more broadly: (1) create a second, distinct non-superuser role and repeat the probe against it, to rule out anything accidentally keyed to `app_user`'s exact name/grants rather than "any non-superuser"; (2) turn the manual `psql` probe into an automated regression test (e.g. a script that asserts pc2 gets 0 rows for pc1's data) so this doesn't rely on someone remembering to re-check by hand after schema changes; (3) confirm `citations`' policy (isolation via a `chunk_id IN (...)` subquery, not a direct `org_id` column) holds under the same probe — it's the one RLS policy here that isn't a straight column comparison and deserves its own check.
 
 ### 1.1 Ingest — Must
 - [x] checkpoint: **pipeline shape** — decided in part: MVP parses `.md` only; every other file type still goes through the real queue and fails *that document* immediately with an explicit reason ("file extension not yet supported") — see [DECISIONS.md](DECISIONS.md).
