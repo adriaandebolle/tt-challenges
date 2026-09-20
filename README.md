@@ -92,6 +92,12 @@ Alongside the required `DECISIONS.md`/`PROMPTS.md`:
 - [PROMPTS.md](PROMPTS.md) — the required AI-trail index.
 - [Database schema (ERD)](https://claude.ai/artifact/5ZCm8PUfhYjB6C2eHwPMb9) — a diagram of the Postgres schema in `api/migrations/0001_init.sql`, including the RLS isolation boundary and the superuser bug it guards against.
 
+**Screenshots** (`screenshots/`) — for a quick visual idea without running it:
+
+| Converse | Dashboard | Postgres |
+|---|---|---|
+| ![Converse](screenshots/converse.png) | ![Dashboard](screenshots/dashboard.png) | ![Postgres](screenshots/postgres-db.png) |
+
 ---
 
 *Everything here — the fund, the companies, the people, the documents — is fictional. No real client data. Have fun with it; we're looking forward to seeing what you build.*
