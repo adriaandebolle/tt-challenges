@@ -55,11 +55,11 @@ Where a phase touches a [CLAUDE.md](CLAUDE.md) decision checkpoint, it's marked 
 - [x] Generate: the trust-surface panel already ships an explicit muted chip — "Metadata block, next-steps checklist — Phase 2" — next to the real signal-score/deviation chips (built alongside Generate, WBS 1.3).
 - [x] Dashboard: no separate inactive tile needed — the "Needs attention" / "Recently generated" grouping plus the footnote naming the Phase 2 reframe already covers the "should" framing honestly, without an artificial empty stub.
 
-### 1.6 Wrap-for-submission — Must (README's definition of done)
-- [ ] checkpoint: **final pass** — does DECISIONS.md tell the true story; does clean `make up` + documented steps actually work.
-- [ ] Finalize DECISIONS.md (cuts, trade-offs, "if I had another day") and PROMPTS.md; confirm the raw transcript landed in `prompts/`.
-- [ ] Clean-clone check: fresh `make up` + documented steps, from scratch.
-- [ ] Commit + push.
+### 1.6 Wrap-for-submission — Must (README's definition of done) ✅ *(done)*
+- [x] checkpoint: **final pass** — DECISIONS.md now has real run steps, the actual cuts, and a drafted "if I had another day" (flagged for the candidate's own priority call, not asserted as their words). The "in your own words" lines under each decision block are still blank by design — the agent was told never to fill those; they're the candidate's to type before this is read as finished.
+- [x] Finalized DECISIONS.md and PROMPTS.md; raw transcript confirmed landing in `prompts/raw-session-0e23f581-725d-4d6d-8f3b-11de3c978477.jsonl` (auto-exported, tracked in git).
+- [x] Clean-clone check, done for real: cloned the repo into a fresh temp directory, wiped the original's Docker volumes so nothing carried over, ran `make up` → `make ingest` → started `api`/`web` exactly as documented in DECISIONS.md. Verified: schema+RLS applied, bucket+queue bootstrapped, 30/7 ingest split matched exactly, and a real chat call returned a grounded, 8-citation answer. This is what caught nothing new — meaning the earlier per-feature verification had already been honest — but it's the check that actually matters for "we will run it," so it was worth doing for real rather than assuming.
+- [x] Commit + push.
 
 ---
 
