@@ -15,18 +15,48 @@ make up
 
 ## The use case I chose
 
-Which document your brain generates (profile / comparison / brief / other), and why — who is it for, what decision does it support? (This is where reading [context-brain/](context-brain/) shows.)
+**Exec brief** — a current-state leadership profile for a single executive, synthesizing the leadership assessment, 360 feedback, board-deck mentions, target scorecard, and competency framework into one grounded document: current-state score, future-state gap, 9-box, flight-risk, succession, key risks, and evidence citations per claim. It supports the ongoing monitor/retain decision (JTBD 5) that Hema owns and Dana reads at the board/IC level — the ask of a small slice of the full talent review, scoped to one exec at a time to fit the timebox.
 
 ## Decisions & trade-offs
 
-One block per significant decision (the checkpoint ones at minimum — use case, cuts, data model, pipeline shape, grounding, trust surface):
+```
+### Decision: Use case — exec brief
+- **The call:** Generate a current-state exec brief per executive (not a pre-hire candidate profile, not a candidate comparison).
+- **Said at the time:** "From my interview with Zack, it is clear that Team Theory focuses on executive-level hiring. These are the most difficult and financially impactful hires. So, understanding this is vital. I didn't find much data either to support a comparison of candidates." — followed by selecting "Exec brief" over "Candidate profile" when asked to disambiguate between the two remaining options.
+- **What I gave up:** The candidate profile (backward-looking, ties directly to a hire/no-hire call) and the candidate-comparison use case (SPEC's third option) — the corpus has no multi-candidate slate for an open role, only one candidate per already-filled seat, so a comparison would have meant inventing data not present in `data/`.
+- **In your own words (typed by you, not your agent):**
+```
 
 ```
-### Decision: …
-- **The call:** what you chose
-- **Said at the time:** "…" (verbatim, captured by your agent from the conversation)
-- **What I gave up:** the trade-off
-- **In your own words (typed by you, not your agent):** why this was right
+### Decision: Data model & isolation — org_id FK + Postgres RLS enabled from the first migration
+- **The call:** A single `orgs` table (the fund + PC1/PC2/PC3), every `documents`/`chunks`/`generated_documents` row carries an `org_id` FK, and Postgres Row-Level Security policies enforce isolation at the database layer from the first migration — not deferred as SPEC.md's listed "Could" (full enforcement), and not left to application-level `WHERE org_id = ?` filtering alone.
+- **Said at the time:** Selected "org_id FK + Postgres RLS enabled now" over app-level-only filtering, on the strength of the reasoning given the turn before: "We are building an executive-level tool. We cannot afford mistakes."
+- **What I gave up:** More setup time on the schema/migration before any ingest code runs, and more care needed on every connection (RLS requires the app to set/authenticate the current org context per request, not just add a `WHERE` clause) — a real cost against the 2.5h budget, taken deliberately because isolation is `context-brain/`'s stated #1 customer gate.
+- **In your own words (typed by you, not your agent):**
+```
+
+```
+### Decision: Grounding strategy — exec-scoped structured retrieval for Generate, vector RAG for Converse
+- **The call:** Open-ended chat questions (Pillar 2) are answered with standard vector-similarity retrieval over the org's chunks. Generating an exec brief (Pillar 3) does not rely on similarity ranking alone — it explicitly fetches every chunk tagged with the named executive's identity across the relevant doc types (leadership-assessment, 360-feedback, board-deck, target-scorecard, competency-framework), so evidence coverage for the one document type that matters most is guaranteed, not probabilistic. In both paths, the standing rule holds regardless: no citation, no claim — the model states "the corpus doesn't support this" rather than filling a gap.
+- **Said at the time:** Selected "Exec-scoped structured retrieval (Recommended)" over pure vector RAG.
+- **What I gave up:** More retrieval-layer code to write (metadata-filtered fetch by executive name + doc_type, on top of the vector-search path already needed for Converse) — a real time cost, taken because a missed reference on an executive-level document is the exact failure mode `05-talent-review.md` calls out as worst-case (a confident, wrong or incomplete read gets acted on).
+- **In your own words (typed by you, not your agent):**
+```
+
+```
+### Decision: Trust surface for MVP — citations + pass-through signal/deviation flags
+- **The call:** The MVP exec brief ships with per-claim citations (the non-negotiable Must) plus the signal/confidence score and any deviation/corroboration flag already computed in the source leadership-assessment (e.g. the CEO-vs-assessor disagreement on CFO retention risk) — extracted and surfaced, not recomputed by the agent. Metadata block (who/what/when/from-which-sources) and suggested next-steps are Phase 2, shown as visible "planned" placeholders in the MVP per the WBS placeholder rule, not silently missing.
+- **Said at the time:** Selected "Citations + pass-through signal/deviation flags (Recommended)" over a citations-only minimum.
+- **What I gave up:** Nothing significant in build time — this was chosen specifically because the signal/confidence and deviation data already exist in the source documents, so surfacing them is extraction, not new agent computation. What's deferred (metadata block, next-steps) still needs Phase 2 time.
+- **In your own words (typed by you, not your agent):**
+```
+
+```
+### Decision: Ingest scope for MVP — markdown only, everything else fails visibly
+- **The call:** For Phase 1 (MVP), only `.md` files are actually parsed, chunked, and embedded. Every file in `data/` — including the `.docx`/`.pptx`/`.xlsx` originals — is still enqueued through the real pipeline (the queue exists immediately, nothing is pre-filtered out of it), but non-markdown files fail *that document* immediately with an explicit, specific reason: "file extension not yet supported." Converters for office formats are deferred to Phase 2/3 of the WBS.
+- **Said at the time:** "We can focus initially on the MD files. This gives us the opportunity to easily ingest data and create converters for additional documents later. The queue should exist immediately. The other files can be marked as 'failed' because the file extension is not yet supported. We should always clearly mark what needs to be done (later) and what can't be found and what can't be used. We are building an executive-level tool. We cannot afford mistakes."
+- **What I gave up:** Full corpus coverage on day one — the `.docx`/`.pptx`/`.xlsx` originals in `data/portcos/*/inbox/office/` won't be searchable or citable until a converter is built. Traded for a pipeline that's real (goes through MinIO+ElasticMQ, not skipped) and fails honestly and specifically rather than silently dropping unsupported files.
+- **In your own words (typed by you, not your agent):**
 ```
 
 ## What I cut
