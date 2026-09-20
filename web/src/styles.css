@@ -1,0 +1,236 @@
+/* DESIGN.md's starter visual language: warm paper, one accent, calm and
+   evidentiary, no gradients/glassmorphism/emoji, generated prose reads like a
+   document rather than a chat bubble. */
+
+:root {
+  --surface: #faf8f3;
+  --card: #ffffff;
+  --border: #e3e0d8;
+  --ink: #1d2129;
+  --ink-muted: #6b7280;
+  --accent: #2f6f4f;
+  --accent-soft: #e7efe9;
+  --amber: #b3402f;
+  --amber-soft: #f5e4e0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding-inline: 20px;
+}
+
+.app-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 22px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.app-header h1 {
+  font-family: Georgia, "Iowan Old Style", serif;
+  font-size: 22px;
+  margin: 0;
+  font-weight: 700;
+}
+
+.app-header .eyebrow {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.org-switcher {
+  font-family: inherit;
+  font-size: 13.5px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--ink);
+}
+
+.scope-note {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin: 10px 0 0;
+}
+
+.thread {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-block: 20px;
+}
+
+.empty-state {
+  color: var(--ink-muted);
+  font-size: 13.5px;
+  line-height: 1.6;
+  padding-top: 40px;
+  max-width: 460px;
+}
+
+.msg-user {
+  align-self: flex-end;
+  max-width: 75%;
+  background: var(--accent-soft);
+  color: var(--ink);
+  padding: 10px 14px;
+  border-radius: 12px 12px 2px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.msg-assistant {
+  align-self: stretch;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+.msg-assistant.ungrounded {
+  background: var(--amber-soft);
+  border-color: var(--amber);
+}
+
+.msg-assistant .answer {
+  font-size: 14.5px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.msg-assistant.ungrounded .answer {
+  color: var(--ink);
+}
+
+.not-found-tag {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--amber);
+  background: #fff;
+  border: 1px solid var(--amber);
+  border-radius: 5px;
+  padding: 2px 7px;
+  margin-bottom: 10px;
+}
+
+.citations {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.citations-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.citation {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+  background: var(--accent-soft);
+  border-radius: 7px;
+  padding: 8px 10px;
+}
+
+.citation .cite-index {
+  font-weight: 700;
+  color: var(--accent);
+  margin-right: 6px;
+}
+
+.citation .cite-source {
+  font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  color: var(--ink);
+}
+
+.composer {
+  display: flex;
+  gap: 10px;
+  padding-block: 16px 22px;
+  border-top: 1px solid var(--border);
+}
+
+.composer input {
+  flex: 1;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 11px 14px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--ink);
+}
+
+.composer input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.composer button {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 11px 20px;
+  border-radius: 9px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.composer button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.error-banner {
+  font-size: 13px;
+  color: var(--amber);
+  background: var(--amber-soft);
+  border: 1px solid var(--amber);
+  border-radius: 8px;
+  padding: 10px 12px;
+}

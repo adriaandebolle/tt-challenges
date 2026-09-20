@@ -100,3 +100,8 @@ Logged in DECISIONS.md as an implementation note and in WBS.md against 1.0 Found
 **Asked:** "Currently, we are using Anthropic. Put an additional task in the WBS (later phases) to check agents like Mistral AI and navigate with the team whether a European provider is a must for some clients or when this might become a requirement."
 **Got:** A new "Open questions for the team" section in WBS.md, distinct from the build-task phases — flagged as a product/vendor decision to raise with Zach, not something to build against speculatively, and grounded it in `01-icp.md`'s note that these buyers stall on security/compliance review more than price.
 **Did with it:** Took it as specified.
+
+## ~13:20–13:50 tool: claude-code
+**Asked:** (continued autonomously) WBS 1.2 Converse UI: the chat frontend.
+**Got:** `web/` scaffolded (React + Vite + TanStack Query), a chat page with an org switcher and a per-answer evidence panel.
+**Did with it:** The system prompt says to test UI changes in a browser rather than claim success from a clean build — did that literally: installed Playwright, drove the app in a real headless Chromium session against the live API and real corpus, and screenshotted three states (empty, grounded with 8 citations, ungrounded/"not in the knowledge base"). Caught and fixed my own test-script bug along the way — the first ungrounded screenshot was taken mid-request because my wait condition matched the "Thinking…" placeholder instead of the real response — before trusting the result.

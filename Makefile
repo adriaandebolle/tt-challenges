@@ -8,9 +8,10 @@ SVC ?=
 help: ## List available commands
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[1m%-8s\033[0m %s\n", $$1, $$2}'
 
-up: ## Start backing services, install api/ deps, apply migrations, bootstrap MinIO+ElasticMQ
+up: ## Start backing services, install api/+web/ deps, apply migrations, bootstrap MinIO+ElasticMQ
 	$(COMPOSE) up -d --wait
 	cd api && npm install --no-fund --no-audit
+	cd web && npm install --no-fund --no-audit
 	$(MAKE) migrate
 	$(MAKE) bootstrap
 	@echo ""
@@ -18,8 +19,9 @@ up: ## Start backing services, install api/ deps, apply migrations, bootstrap Mi
 	@echo "  minio     → localhost:9000  (console :9001 — minio-root / minio-secret) — bucket ready"
 	@echo "  queue     → localhost:9324  (SQS-compatible) — queue ready"
 	@echo ""
-	@echo "  Next: make ingest    (seed the data/ corpus into the pipeline)"
-	@echo "        cd api && npm run dev    (start the API)"
+	@echo "  Next: make ingest              (seed the data/ corpus into the pipeline)"
+	@echo "        cd api && npm run start  (API on :8787)"
+	@echo "        cd web && npm run dev    (UI on :5173)"
 
 migrate: ## Apply Postgres migrations from api/migrations (idempotent)
 	cd api && npm run db:migrate
