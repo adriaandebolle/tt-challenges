@@ -8,51 +8,51 @@ Where a phase touches a [CLAUDE.md](CLAUDE.md) decision checkpoint, it's marked 
 
 ---
 
-## Phase 0 — Orientation & decisions *(done)*
-- Read README/SPEC/STACK/DESIGN/context-brain; sampled `data/` to check which use case the corpus actually supports.
-- 🔲 checkpoint: **use case** → decided **exec brief** (see [DECISIONS.md](DECISIONS.md)).
-- 🔲 checkpoint: **scope cuts** → this WBS is that checkpoint, worked through phase by phase below.
+## Phase 0 — Orientation & decisions ✅ *(done)*
+- [x] Read README/SPEC/STACK/DESIGN/context-brain; sampled `data/` to check which use case the corpus actually supports.
+- [x] checkpoint: **use case** → decided **exec brief** (see [DECISIONS.md](DECISIONS.md)).
+- [x] checkpoint: **scope cuts** → closed: Phase 1 below is today's cut. Everything in Phases 2–4 is deliberately deferred, not a gap.
 
 ## Phase 1 — MVP: thin slice, Must-level, all four pillars, end to end
 
 ### 1.0 Foundations
-- 🔲 checkpoint: **data model** — resolved: `orgs` (fund + PC1/PC2/PC3) with every content row FK'd via `org_id`, isolation enforced with **Postgres RLS from the first migration** (not deferred) — see [DECISIONS.md](DECISIONS.md). This pulls SPEC's "org-scoped access enforcement" out of Phase 3/Could and into Phase 1/Must-plus.
-- Postgres migration: `orgs`, `documents`, `chunks` (pgvector), `generated_documents`, `executives` — every content row FK'd to `org_id`; RLS policies scoping every table by the current org context.
-- App layer sets/authenticates the org context per request (RLS needs this, not just a `WHERE` clause) — budget real time for this, it's not free.
-- MinIO bucket + ElasticMQ queue bootstrap, created on `make up` (code/init-script, not manual).
+- [x] checkpoint: **data model** — decided: `orgs` (fund + PC1/PC2/PC3) with every content row FK'd via `org_id`, isolation enforced with **Postgres RLS from the first migration** (not deferred) — see [DECISIONS.md](DECISIONS.md). This pulls SPEC's "org-scoped access enforcement" out of Phase 3/Could and into Phase 1/Must-plus.
+- [ ] Postgres migration: `orgs`, `documents`, `chunks` (pgvector), `generated_documents`, `executives` — every content row FK'd to `org_id`; RLS policies scoping every table by the current org context.
+- [ ] App layer sets/authenticates the org context per request (RLS needs this, not just a `WHERE` clause) — budget real time for this, it's not free.
+- [ ] MinIO bucket + ElasticMQ queue bootstrap, created on `make up` (code/init-script, not manual).
 
 ### 1.1 Ingest — Must
-- 🔲 checkpoint: **pipeline shape** — resolved in part: MVP parses `.md` only; every other file type still goes through the real queue and fails *that document* immediately with an explicit reason ("file extension not yet supported") — see [DECISIONS.md](DECISIONS.md).
-- Seed/ingest path: walk **all** of `data/` (markdown + `.docx`/`.pptx`/`.xlsx` originals) → upload every file to MinIO → enqueue one job per doc, no pre-filtering.
-- Worker: dequeue → if `.md`, chunk → embed → insert chunks, status ready; if not `.md`, status **failed**, reason = unsupported extension. Status always visible to the user (queued/processing/ready/failed).
-- A bad file (unsupported type, malformed content) fails *that* document, visibly, with a specific reason — never the pipeline.
+- [x] checkpoint: **pipeline shape** — decided in part: MVP parses `.md` only; every other file type still goes through the real queue and fails *that document* immediately with an explicit reason ("file extension not yet supported") — see [DECISIONS.md](DECISIONS.md).
+- [ ] Seed/ingest path: walk **all** of `data/` (markdown + `.docx`/`.pptx`/`.xlsx` originals) → upload every file to MinIO → enqueue one job per doc, no pre-filtering.
+- [ ] Worker: dequeue → if `.md`, chunk → embed → insert chunks, status ready; if not `.md`, status **failed**, reason = unsupported extension. Status always visible to the user (queued/processing/ready/failed).
+- [ ] A bad file (unsupported type, malformed content) fails *that* document, visibly, with a specific reason — never the pipeline.
 
 ### 1.2 Converse — Must
-- 🔲 checkpoint: **grounding strategy** — resolved: vector RAG for Converse's open-ended questions; exec-scoped structured retrieval for Generate (see [DECISIONS.md](DECISIONS.md)). No citation, no claim, in either path.
-- Chunk metadata carries `org_id`, `doc_type`, and (where applicable) `executive_name` — needed for both retrieval paths below.
-- Retrieval: embed query, vector search, org/portco filter (RLS-scoped).
-- Chat endpoint: grounded answer with citations that trace to a real passage; explicit "not in the corpus" path — never invents.
-- Chat UI, single-turn.
+- [x] checkpoint: **grounding strategy** — decided: vector RAG for Converse's open-ended questions; exec-scoped structured retrieval for Generate (see [DECISIONS.md](DECISIONS.md)). No citation, no claim, in either path.
+- [ ] Chunk metadata carries `org_id`, `doc_type`, and (where applicable) `executive_name` — needed for both retrieval paths below.
+- [ ] Retrieval: embed query, vector search, org/portco filter (RLS-scoped).
+- [ ] Chat endpoint: grounded answer with citations that trace to a real passage; explicit "not in the corpus" path — never invents.
+- [ ] Chat UI, single-turn.
 
 ### 1.3 Generate — Must *(the heart)*
-- Agent: from the chat, generate the exec brief for the named executive — retrieval is **not** similarity-only: explicitly fetch every chunk tagged to that executive across leadership-assessment/360/board-deck/scorecard/competency-framework, so coverage doesn't depend on ranking.
-- Save the generated brief back into the KB — persisted, listed among the fund's documents, provenance intact.
-- 🔲 checkpoint: **the trust surface** — resolved: MVP ships citations *plus* pass-through signal/confidence score and any deviation/corroboration flag already computed in the source assessment (extraction, not new agent computation) — see [DECISIONS.md](DECISIONS.md). Metadata block and next-steps are genuinely Phase 2, stubbed per the placeholder rule.
+- [ ] Agent: from the chat, generate the exec brief for the named executive — retrieval is **not** similarity-only: explicitly fetch every chunk tagged to that executive across leadership-assessment/360/board-deck/scorecard/competency-framework, so coverage doesn't depend on ranking.
+- [ ] Save the generated brief back into the KB — persisted, listed among the fund's documents, provenance intact.
+- [x] checkpoint: **the trust surface** — decided: MVP ships citations *plus* pass-through signal/confidence score and any deviation/corroboration flag already computed in the source assessment (extraction, not new agent computation) — see [DECISIONS.md](DECISIONS.md). Metadata block and next-steps are genuinely Phase 2, stubbed per the placeholder rule.
 
 ### 1.4 Dashboard — Must
-- One view: ingestion status counts, what's failed, recently generated docs — "what's in the KB, what's the pipeline doing, what's been generated."
+- [ ] One view: ingestion status counts, what's failed, recently generated docs — "what's in the KB, what's the pipeline doing, what's been generated."
 
 ### 1.5 Placeholders for everything deferred out of MVP
-- Ingest: "add a document" control visible, labeled not-yet-wired if 2.1 isn't done.
-- Converse: a visible note if multi-turn/streaming isn't live yet.
-- Generate: trust-surface panel shows citations + signal/deviation flags now; metadata block and next-steps shown as "planned" placeholders, not silently absent.
-- Dashboard: a listed-but-inactive tile for the "should" framing (morning question) if not yet built.
+- [ ] Ingest: "add a document" control visible, labeled not-yet-wired if 2.1 isn't done.
+- [ ] Converse: a visible note if multi-turn/streaming isn't live yet.
+- [ ] Generate: trust-surface panel shows citations + signal/deviation flags now; metadata block and next-steps shown as "planned" placeholders, not silently absent.
+- [ ] Dashboard: a listed-but-inactive tile for the "should" framing (morning question) if not yet built.
 
 ### 1.6 Wrap-for-submission — Must (README's definition of done)
-- 🔲 checkpoint: **final pass** — does DECISIONS.md tell the true story; does clean `make up` + documented steps actually work.
-- Finalize DECISIONS.md (cuts, trade-offs, "if I had another day") and PROMPTS.md; confirm the raw transcript landed in `prompts/`.
-- Clean-clone check: fresh `make up` + documented steps, from scratch.
-- Commit + push.
+- [ ] checkpoint: **final pass** — does DECISIONS.md tell the true story; does clean `make up` + documented steps actually work.
+- [ ] Finalize DECISIONS.md (cuts, trade-offs, "if I had another day") and PROMPTS.md; confirm the raw transcript landed in `prompts/`.
+- [ ] Clean-clone check: fresh `make up` + documented steps, from scratch.
+- [ ] Commit + push.
 
 ---
 
@@ -77,9 +77,6 @@ Only after Phases 1–3 are genuinely solid. Candidates, to be argued for (not d
 
 ---
 
-## Open scope-cut question
+## Status
 
-Given "don't worry about timing," the plan above is complete top to bottom — but only Phase 1 is realistic inside the 2.5h cap, and even Phase 1's Must-tier list is dense. Two things I still need your call on, per CLAUDE.md's checkpoint process:
-
-1. Within Phase 1 itself, is there a Must-tier task above you'd compress further to protect the end-to-end slice (e.g., a simpler embedding/chunking scheme, a narrower dashboard)?
-2. Confirm the read that Phase 1 alone *is* your scope cut for today — everything in Phases 2–4 is deliberately not attempted now, recorded as a decision rather than a gap.
+Planning closed 11:32 — Phase 0 done, the five checkpoints above resolved and logged verbatim in [DECISIONS.md](DECISIONS.md). Nothing in Phase 1 is implemented yet — checkboxes above track that honestly as work happens. Next up: 1.0 Foundations (the Postgres migration).
